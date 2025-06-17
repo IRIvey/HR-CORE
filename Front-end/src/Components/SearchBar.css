@@ -1,0 +1,33 @@
+.search-container {
+  width: 550px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  
+}
+
+.search-label {
+   margin-top: 9px;
+  margin-right: 5px;
+  font-weight: bold;
+  font-size: 25px;
+  color: #276f82;
+  transform: translateX(-4cm); /* Move label 4cm to the left */
+}
+
+.search-input {
+   margin-top: 35px;
+  flex: 5;
+  padding: 12px; /* Increased padding for a bigger input */
+  border: 1px solid #762626;
+  border-radius: 12px;
+  margin-right: 5px;
+  transform: translateX(-4cm); /* Move input 3cm to the left */
+}
+
+.search-results {
+  margin-top: 10px;
+  font-size: 16px;
+  color: #333;
+}

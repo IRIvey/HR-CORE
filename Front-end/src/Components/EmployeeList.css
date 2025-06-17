@@ -1,0 +1,120 @@
+.employee-list-container {
+  padding: 20px;
+   border-radius: 20px;
+}
+
+/* .employee-table {
+    width: 80%;
+    border-collapse: collapse;
+    margin-left: auto;
+} */
+ .employee-table {
+  width: 80%;
+  border-collapse: collapse; /* important */
+  border-spacing: 0; /* no space between cells */
+  margin-left: auto;
+  /* round table */
+   
+
+ }
+
+.employee-table th,
+.employee-table td {
+  border: 1px solid #ccc;
+  padding: 20px;
+  text-align: left;
+
+}
+
+.employee-table th {
+  background-color: #f5f5f5;
+  
+
+}
+
+button {
+  margin-right: 20px;
+  padding: 5px 25px;
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.view-btn {
+    background-color: 		 #276f82;
+    color: white;
+    padding: 10px 15px;
+    font-size: 15px;
+}
+
+.edit-btn {
+    background-color:  #276f82;
+    color: white;
+    padding: 10px 15px;
+    font-size: 15px;
+}
+
+.delete-btn {
+    background-color:  #276f82;
+    color: white;
+    padding: 10px 15px;
+    font-size: 15px;
+}
+.action-column {
+  width: 200px; /* Try reducing if needed */
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.delete-btn:hover{
+  background-color: #762626; /* Darker red on hover */
+}
+.view-btn:hover{
+  background-color: green; /* Darker red on hover */
+}
+.edit-btn:hover{
+  background-color: #655da0; /* Darker blue on hover */
+}
+.employee-table th {
+  background-color: #f5f5f5;
+  color: #276f82;       /* Blue text */
+  font-size: 18px;      /* Slightly larger font */
+  font-weight: 600;     /* Optional: bolder look */
+  padding: 20px;
+  text-align: left;
+}
+.employee-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.add-btn {
+  background-color:  #276f82;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.add-btn:hover {
+  background-color: green;
+}
+
+.employee-list-title {
+  font-size: 15px;
+  color: #276f82;
+  font-weight: bold;
+  width: 400px;
+ margin: -50px auto 40px auto;
+ 
+transform: translateX(-5cm);
+  font-family: Arial, sans-serif;
+  text-align: left; /* Center the title */
+  margin-bottom: 60px; /* Add some space below the title */
+
+}
