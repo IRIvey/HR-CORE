@@ -1,0 +1,87 @@
+.salary-form-container {
+  background-color: #ffffff;
+  padding: 20px;
+  max-width: 700px;
+  margin: 3cm 0 0 14cm;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.salary-form-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 24px;
+  align-items: center;
+  color: #276f82;
+}
+
+.salary-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.salary-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.salary-form-group label {
+  font-size: 19px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.salary-form-group input,
+.salary-form-group select {
+  padding: 10px 12px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #f9f9f9;
+}
+
+.salary-form-group input:focus,
+.salary-form-group select:focus {
+  outline: none;
+  border-color: #3182ce;
+  background-color: #fff;
+}
+
+/* Add spacing between form groups */
+.salary-form-group {
+  margin-bottom: 18px;
+}
+
+.salary-submit-btn {
+  grid-column: span 2;
+  padding: 12px;
+  background-color: #276f82;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+}
+
+.salary-submit-btn:hover {
+  background-color: #655da0;;
+}
+.salary-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.salary-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 56px;  
+  row-gap: 19px;    
+}
