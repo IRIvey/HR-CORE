@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Admin {
+  id        Int         @id @default(autoincrement())
+  name      String
+  email     String      @unique
+  password  String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  reportings Reporting[]
+}
+
+model Attendance {
+  id           Int        @id @default(autoincrement())
+  employeeId   Int
+  checkInTime  DateTime
+  checkOutTime DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
+
+// model Department {
+//   id        Int        @id @default(autoincrement())
+//   name      String
+//   createdAt DateTime   @default(now())
+//   updatedAt DateTime   @updatedAt
+//   employees Employee[]
+// }
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+}
+
+
+model Employee {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  salary        Float
+  departmentId  Int
+  position      String
+  status        String
+  joinDate      DateTime
+  age           Int
+  experience    Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  attendances   Attendance[]
+  department    Department     @relation(fields: [departmentId], references: [id])
+  goals         Goal[]
+  leaveRequests LeaveRequest[]
+  recruitments  Recruitment[]
+  salaries      Salary[]
+  performanceReviews PerformanceReview[]
+
+  @@index([departmentId])
+}
+
+
+model Goal {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  name        String
+  goalTitle   String
+  description String
+  deadline    DateTime
+  status      String     @default("Not Started")
+  progress    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
+
+
+model HRSystem {
+  id        Int      @id @default(autoincrement())
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeaveRequest {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  startDate  DateTime
+  endDate    DateTime
+  status     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
+
+model Recruitment {
+  id          Int      @id @default(autoincrement())
+  type        String
+  employeeId  Int
+  date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  employee    Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
+
+model Reporting {
+  id            Int      @id @default(autoincrement())
+  type          String
+  adminId       Int
+  generatedDate DateTime
+  content       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  admin         Admin    @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+}
+
+
+model Salary {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int
+  baseSalary    Float
+  allowances    Float     @default(0)
+  deductions    Float     @default(0)
+  payDate       DateTime
+  overtimeHours Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
+
+model PerformanceReview {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  rating     Float
+  feedback   String
+  reviewDate DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+}
