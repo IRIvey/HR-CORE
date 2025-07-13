@@ -2,21 +2,30 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
 
 import adminRoutes from './src/routes/adminRoutes.js';
 import employeeRoutes from './src/routes/employeeRoutes.js';
 import goalRoutes from './src/routes/goalRoutes.js';
 import reviewRoutes from './src/routes/reviewRoutes.js';
-import salaryRoutes from './src/routes/salaryRoutes.js';
+ import salaryRoutes from './src/routes/salaryRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
 
 const app = express();
+app.use(express.json());
 app.use(cors());
-
+app.use(session({
+  secret: 'yourSuperSecretKey',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // true if using HTTPS
+}));
 app.use('/api/admin', adminRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/employee-goals', goalRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/salaries', salaryRoutes);
+app.use('/auth', express.json(), authRoutes);
 
 async function main() {
 
