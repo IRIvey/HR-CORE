@@ -34,4 +34,33 @@ export const getEmployeeById = async (req, res) => {
   }
 };
 
+export const createEmployee = async (req, res) => {
+  try {
+    const {
+      name, email, department, position,
+      salary, status, joinDate, age, experience
+    } = req.body;
+
+    const newEmployee = await prisma.employee.create({
+      data: {
+        name,
+        email,
+        department: {
+          connect: { name: department } 
+        },
+        position,
+        salary: parseFloat(salary),
+        status,
+        joinDate: new Date(joinDate),
+        age: parseInt(age),
+        experience: parseInt(experience),
+      }
+    });
+
+    res.status(201).json(newEmployee);
+  } catch (err) {
+    console.error('Failed to create employee:', err);
+    res.status(500).json({ error: 'Failed to create employee' });
+  }
+};
 
