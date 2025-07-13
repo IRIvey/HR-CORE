@@ -19,16 +19,17 @@ model Admin {
 }
 
 model Attendance {
-  id           Int        @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   employeeId   Int
   checkInTime  DateTime
   checkOutTime DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  employee     Employee   @relation(fields: [employeeId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
+
 
 // model Department {
 //   id        Int        @id @default(autoincrement())
@@ -70,7 +71,6 @@ model Employee {
   @@index([departmentId])
 }
 
-
 model Goal {
   id          Int      @id @default(autoincrement())
   employeeId  Int
@@ -78,11 +78,11 @@ model Goal {
   goalTitle   String
   description String
   deadline    DateTime
-  status      String     @default("Not Started")
-  progress    Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  employee    Employee   @relation(fields: [employeeId], references: [id])
+  status      String   @default("Not Started")
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
@@ -103,7 +103,7 @@ model LeaveRequest {
   status     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  employee   Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
@@ -115,7 +115,7 @@ model Recruitment {
   date        DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  employee    Employee @relation(fields: [employeeId], references: [id])
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
@@ -144,7 +144,7 @@ model Salary {
   overtimeHours Int
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  employee      Employee @relation(fields: [employeeId], references: [id])
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
@@ -157,7 +157,7 @@ model PerformanceReview {
   reviewDate DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  employee   Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
