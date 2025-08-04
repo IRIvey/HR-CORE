@@ -15,12 +15,33 @@ const ContactPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Thank you for your message! We\'ll get back to you soon.');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const scriptURL = "https://script.google.com/macros/s/AKfycbwCR_ViCidWmh3kNdAG4shSOQvYRV_QlmC6jvppBS939myR4GwMTKUhOOsbJLIG9mod/exec";
+
+  const formDataToSend = new FormData();
+  formDataToSend.append('name', formData.name);
+  formDataToSend.append('email', formData.email);
+  formDataToSend.append('subject', formData.subject);
+  formDataToSend.append('message', formData.message);
+
+  try {
+    const res = await fetch(scriptURL, {
+      method: "POST",
+      body: formDataToSend
+    });
+
+    alert("✅ Thank you! Your message has been sent.");
     setFormData({ name: '', email: '', subject: '', message: '' });
-  };
+  } catch (err) {
+    alert("❌ Failed to send message. Please try again.");
+    console.error(err);
+  }
+};
+
+
+
 
   const styles = {
     container: {
