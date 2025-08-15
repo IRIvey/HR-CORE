@@ -31,13 +31,6 @@ model Attendance {
 }
 
 
-// model Department {
-//   id        Int        @id @default(autoincrement())
-//   name      String
-//   createdAt DateTime   @default(now())
-//   updatedAt DateTime   @updatedAt
-//   employees Employee[]
-// }
 model Department {
   id        Int        @id @default(autoincrement())
   name      String     @unique
@@ -87,12 +80,13 @@ model Goal {
   @@index([employeeId])
 }
 
-
 model HRSystem {
-  id        Int      @id @default(autoincrement())
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  status      String
+  lastUpdated DateTime
+  version     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model LeaveRequest {
@@ -101,18 +95,21 @@ model LeaveRequest {
   startDate  DateTime
   endDate    DateTime
   status     String
+  leaveType  String   // ← add this line
+  reason     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@index([employeeId])
+  employee   Employee @relation(fields: [employeeId], references: [id])
 }
+
 
 model Recruitment {
   id          Int      @id @default(autoincrement())
   type        String
   employeeId  Int
   date        DateTime
+  status     String 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -120,18 +117,26 @@ model Recruitment {
   @@index([employeeId])
 }
 
+
 model Reporting {
-  id            Int      @id @default(autoincrement())
+  id            String   @id
+  name          String
   type          String
-  adminId       Int
+  date          DateTime
+  status        String
+  size          String
+  downloads     Int
   generatedDate DateTime
-  content       String
+
+  content       Json
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  adminId       Int
   admin         Admin    @relation(fields: [adminId], references: [id])
-
-  @@index([adminId])
 }
+
+
 
 
 model Salary {
@@ -150,14 +155,16 @@ model Salary {
 }
 
 model PerformanceReview {
-  id         Int      @id @default(autoincrement())
-  employeeId Int
-  rating     Float
-  feedback   String
-  reviewDate DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  employeeId   Int
+  rating       Float
+  feedback     String
+  reviewDate   DateTime
+  reviewPeriod String
+  goals        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
