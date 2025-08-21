@@ -1,205 +1,189 @@
-import React, { useState } from "react";
+
+
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
-import { MdFeaturedPlayList } from "react-icons/md";
-import { MdOutlinePerson } from "react-icons/md";
+import { MdFeaturedPlayList, MdOutlinePerson, MdPayments, MdDashboardCustomize, MdOutlineSystemUpdateAlt } from "react-icons/md";
 import { BsPerson } from "react-icons/bs";
-import { GiThreeLeaves } from "react-icons/gi";
-import { MdPayments } from "react-icons/md";
-import { MdDashboardCustomize } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
-import { MdOutlineSystemUpdateAlt } from "react-icons/md";
 import { GrDocumentPerformance } from "react-icons/gr";
-import { MdPendingActions } from "react-icons/md";
+
 const Sidebar = ({ onLogout }) => {
-    const [expandedSections, setExpandedSections] = useState({
-        employeeManagement: false,
-        attendanceLeave: true, 
-        payrollCompensations: false,
-        performance: false,
-        recruitment: false,
-    });
+  const navigate = useNavigate();
 
-    const toggleSection = (section) => {
-        setExpandedSections((prev) => ({
-            ...prev,
-            [section]: !prev[section],
-        }));
+  const [role, setRole] = useState(null); // store logged-in role
+  const [expandedSections, setExpandedSections] = useState({
+    employeeManagement: false,
+    attendanceLeave: true,
+    payrollCompensations: false,
+    performance: false,
+    recruitment: false,
+  });
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/auth/status", { credentials: "include" });
+        const data = await res.json();
+        if (data.loggedIn) setRole(data.user?.role);
+      } catch (err) {
+        console.error("Failed to get role:", err);
+      }
     };
+    fetchRole();
+  }, []);
 
-    return (
-        <div className="sidebar">
-            <div className="sidebar-title">HR CORE</div>
-            <ul className="sidebar-menu">
-                {/* Dashboard */}
-                <li className="menu-item">
-                    <i className="bi bi-speedometer2"></i>
-                     <MdDashboardCustomize style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Dashboard</span>
-                </li>
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
-                
-                                <li className="menu-item">
-                                    <i className="bi bi-grid-3x3-gap"></i>
-                                     <MdFeaturedPlayList style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Features</span>
-                                     
-                                </li>
+  const handleLogoutClick = () => {
+    if (onLogout) onLogout();
+    navigate("/");
+  };
 
-                                {/* Employee Management */}
-                <li className="menu-section">
-                    <div
-                        className="menu-section-header"
-                        onClick={() => toggleSection("employeeManagement")}
-                    >
-                        <i className="bi bi-people"></i>
-                       <BsPerson  style={{ marginRight: '13px', fontSize: '24px' }} />
-                       <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Employee Management</span>
-                        <i
-                            className={`bi bi-chevron-${
-                                expandedSections.employeeManagement ? "down" : "right"
-                            } chevron`}
-                        ></i>
-                    </div>
-                    {expandedSections.employeeManagement && (
-                        <ul className="submenu">
-                            <li className="submenu-item">
-                                <span>Employees</span>
-                            </li>
-                            <li className="submenu-item">
-                                <span>Profile</span>
-                            </li>
-                        </ul>
-                    )}
-                </li>
+  return (
+    <div className="sidebar">
+      <div className="sidebar-title">HR CORE</div>
+      <ul className="sidebar-menu">
 
-                {/* Attendance and Leave */}
-                <li className="menu-section">
-                    <div
-                        className="menu-section-header"
-                        onClick={() => toggleSection("attendanceLeave")}
-                    >
-                        <i className="bi bi-calendar-check"></i>
-                       <MdFeaturedPlayList style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Attendance and Leave</span>
-                        <i
-                            className={`bi bi-chevron-${
-                                expandedSections.attendanceLeave ? "down" : "right"
-                            } chevron`}
-                        ></i>
-                    </div>
-                    {expandedSections.attendanceLeave && (
-                        <ul className="submenu">
-                            <li className="submenu-item">
-                                <span>Attendance Logs</span>
-                            </li>
-                            <li className="submenu-item active">
-                                <span>Leave Requests</span>
-                            </li>
-                        </ul>
-                    )}
-                </li>
+        {/* Dashboard */}
+        <li className="menu-item">
+          <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <MdDashboardCustomize style={{ marginRight: '13px', fontSize: '24px' }} />
+            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Dashboard</span>
+          </Link>
+        </li>
 
-                {/* Payroll and Compensations */}
-                <li className="menu-section">
-                    <div
-                        className="menu-section-header"
-                        onClick={() => toggleSection("payrollCompensations")}
-                    >
-                        <i className="bi bi-wallet2"></i>
-                         <MdPayments style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Payroll and Compensations</span>
-                        <i
-                            className={`bi bi-chevron-${
-                                expandedSections.payrollCompensations ? "down" : "right"
-                            } chevron`}
-                        ></i>
-                    </div>
-                    {expandedSections.payrollCompensations && (
-                        <ul className="submenu">
-                            <li className="submenu-item">
-                                <span>Salary Management</span>
-                            </li>
-                            <li className="submenu-item">
-                                <span>Overtime Tracking</span>
-                            </li>
-                        </ul>
-                    )}
-                </li>
+        {/* Features */}
+        <li className="menu-item">
+          <MdFeaturedPlayList style={{ marginRight: '13px', fontSize: '24px' }} />
+          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Features</span>
+        </li>
 
-                {/* Performance */}
-                <li className="menu-section">
-                    <div
-                        className="menu-section-header"
-                        onClick={() => toggleSection("performance")}
-                    >
-                        <i className="bi bi-bar-chart-line"></i>
-                        <GrDocumentPerformance style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Performance</span>
-                        <i
-                            className={`bi bi-chevron-${
-                                expandedSections.performance ? "down" : "right"
-                            } chevron`}
-                        ></i>
-                    </div>
-                    {expandedSections.performance && (
-                        <ul className="submenu">
-                            <li className="submenu-item">
-                                <span>Goals</span>
-                            </li>
-                            <li className="submenu-item">
-                                <span>Performance Reviews</span>
-                            </li>
-                        </ul>
-                    )}
-                </li>
-
-                {/* Recruitment */}
-                <li className="menu-section">
-                    <div
-                        className="menu-section-header"
-                        onClick={() => toggleSection("recruitment")}
-                    >
-                        <i className="bi bi-person-plus"></i>
-                        <MdPayments style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Recruitment</span>
-                        <i
-                            className={`bi bi-chevron-${
-                                expandedSections.recruitment ? "down" : "right"
-                            } chevron`}
-                        ></i>
-                    </div>
-                    {expandedSections.recruitment && (
-                        <ul className="submenu">
-                            <li className="submenu-item">
-                                <span>Onboarding</span>
-                            </li>
-                            <li className="submenu-item">
-                                <span>Offboarding</span>
-                            </li>
-                        </ul>
-                    )}
-                </li>
-
-                {/* System Setting */}
-                <li className="menu-item">
-                    <i className="bi bi-gear"></i>
-                     <MdOutlineSystemUpdateAlt style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Systems and Settings</span>
-                </li>
-
-                {/* Logout */}
-                <li
-                    onClick={onLogout}
-                    className="menu-item logout-btn"
-                    style={{ cursor: "pointer" }}
-                >
-                    <i className="bi bi-box-arrow-right"></i>
-                     <AiOutlineLogout style={{ marginRight: '13px', fontSize: '24px' }} />
-                                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Logout</span>
-                </li>
+        {/* Employee Management */}
+        <li className="menu-section">
+          <div className="menu-section-header" onClick={() => toggleSection("employeeManagement")}>
+            <BsPerson style={{ marginRight: '13px', fontSize: '24px' }} />
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Employee Management</span>
+            <i className={`bi bi-chevron-${expandedSections.employeeManagement ? "down" : "right"} chevron`}></i>
+          </div>
+          {expandedSections.employeeManagement && (
+            <ul className="submenu">
+              <li className="submenu-item">
+                <Link to="/EmployeeList" style={{ textDecoration: 'none', color: 'inherit' }}>Employees</Link>
+              </li>
+              <li className="submenu-item">
+                <Link to="/AdminProfile" style={{ textDecoration: 'none', color: 'inherit' }}>Profile</Link>
+              </li>
             </ul>
-        </div>
-    );
+          )}
+        </li>
+
+         {/* Attendance and Leave */}
+         <li className="menu-section">
+           <div className="menu-section-header" onClick={() => toggleSection("attendanceLeave")}>
+            <MdFeaturedPlayList style={{ marginRight: '13px', fontSize: '24px' }} />
+            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Attendance and Leave</span>
+            <i className={`bi bi-chevron-${expandedSections.attendanceLeave ? "down" : "right"} chevron`}></i>
+          </div>
+          {expandedSections.attendanceLeave && (
+            <ul className="submenu">
+              <li className="submenu-item">
+                <Link to="/attendance" style={{ textDecoration: 'none', color: 'inherit' }}>Attendance Logs</Link>
+              </li>
+              <li className="submenu-item">
+                <Link to="/leave-requests" style={{ textDecoration: 'none', color: 'inherit' }}>Leave Requests</Link>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Payroll and Compensations */}
+{role !== "EMPLOYEE" && ( // hide completely if Employee
+  <li className="menu-section">
+    <div className="menu-section-header" onClick={() => toggleSection("payrollCompensations")}>
+      <MdPayments style={{ marginRight: '13px', fontSize: '24px' }} />
+      <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Payroll and Compensations</span>
+      <i className={`bi bi-chevron-${expandedSections.payrollCompensations ? "down" : "right"} chevron`}></i>
+    </div>
+    {expandedSections.payrollCompensations && (
+      <ul className="submenu">
+        {/* Only Admin gets Salary Management */}
+        {role === "ADMIN" && (
+          <li className="submenu-item">
+            <Link to="/Salary" style={{ textDecoration: 'none', color: 'inherit' }}>Salary Management</Link>
+          </li>
+        )}
+        {/* Both Admin & TeamLead get Overtime */}
+        <li className="submenu-item">
+          <Link to="/overtime" style={{ textDecoration: 'none', color: 'inherit' }}>Overtime Tracking</Link>
+        </li>
+      </ul>
+    )}
+  </li>
+)}
+
+        {/* Performance */}
+        <li className="menu-section">
+          <div className="menu-section-header" onClick={() => toggleSection("performance")}>
+            <GrDocumentPerformance style={{ marginRight: '13px', fontSize: '24px' }} />
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Performance</span>
+            <i className={`bi bi-chevron-${expandedSections.performance ? "down" : "right"} chevron`}></i>
+          </div>
+          {expandedSections.performance && (
+            <ul className="submenu">
+              <li className="submenu-item">
+                <Link to="/EmployeeGoals" style={{ textDecoration: 'none', color: 'inherit' }}>Goals</Link>
+              </li>
+              <li className="submenu-item">
+                <Link to="/PerformanceReview" style={{ textDecoration: 'none', color: 'inherit' }}>Performance Reviews</Link>
+              </li>
+            </ul>
+          )}
+        </li>
+
+
+{/* //         {/* Recruitment */}
+        <li className="menu-section">
+          <div className="menu-section-header" onClick={() => toggleSection("recruitment")}>
+            <MdPayments style={{ marginRight: '13px', fontSize: '24px' }} />
+             <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Recruitment</span>
+             <i className={`bi bi-chevron-${expandedSections.recruitment ? "down" : "right"} chevron`}></i>
+           </div>
+           {expandedSections.recruitment && (
+             <ul className="submenu">
+               <li className="submenu-item">
+                 <Link to="/Candidates" style={{ textDecoration: 'none', color: 'inherit' }}>Candidates</Link>
+              </li>
+              <li className="submenu-item">
+                <Link to="/JobPostings" style={{ textDecoration: 'none', color: 'inherit' }}>Job Postings</Link>
+              </li>
+          </ul>
+         )}
+       </li>
+
+     {/* System Settings */}
+{role === "ADMIN" || role === "TEAMLEAD" ? (
+  <li className="menu-item">
+    <Link to="/settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <MdOutlineSystemUpdateAlt style={{ marginRight: '13px', fontSize: '24px' }} />
+      <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Systems and Settings</span>
+    </Link>
+  </li>
+) : null}
+        
+        {/* Logout */}
+        <li onClick={handleLogoutClick} className="menu-item logout-btn" style={{ cursor: "pointer" }}>
+          <AiOutlineLogout style={{ marginRight: '13px', fontSize: '24px' }} />
+          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Logout</span>
+        </li>
+      </ul>
+    </div>
+  );
 };
 
 export default Sidebar;
