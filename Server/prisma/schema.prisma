@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Admin {
   id        Int         @id @default(autoincrement())
   name      String
@@ -30,7 +29,6 @@ model Attendance {
   @@index([employeeId])
 }
 
-
 model Department {
   id        Int        @id @default(autoincrement())
   name      String     @unique
@@ -39,11 +37,35 @@ model Department {
   employees Employee[]
 }
 
+// model Employee {
+//   id            Int            @id @default(autoincrement())
+//   name          String
+//   email         String         @unique
+//   salary        Float
+//   departmentId  Int
+//   position      String
+//   status        String
+//   joinDate      DateTime
+//   age           Int
+//   experience    Int
+//   role          Role           @default(EMPLOYEE)  // ← Added role field
+//   createdAt     DateTime       @default(now())
+//   updatedAt     DateTime       @updatedAt
+//   attendances   Attendance[]
+//   department    Department     @relation(fields: [departmentId], references: [id])
+//   goals         Goal[]
+//   leaveRequests LeaveRequest[]
+//   recruitments  Recruitment[]
+//   salaries      Salary[]
+//   performanceReviews PerformanceReview[]
 
+//   @@index([departmentId])
+// }
 model Employee {
   id            Int            @id @default(autoincrement())
   name          String
   email         String         @unique
+  password      String?        // ← Add this password field (optional for existing records)
   salary        Float
   departmentId  Int
   position      String
@@ -51,6 +73,7 @@ model Employee {
   joinDate      DateTime
   age           Int
   experience    Int
+  role          Role           @default(EMPLOYEE)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   attendances   Attendance[]
@@ -73,11 +96,10 @@ model Goal {
   deadline    DateTime
   status      String   @default("Not Started")
   progress    Int      @default(0)
+  priority    String   @default("Medium") // ← already added
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([employeeId])
 }
 
 model HRSystem {
@@ -95,7 +117,7 @@ model LeaveRequest {
   startDate  DateTime
   endDate    DateTime
   status     String
-  leaveType  String   // ← add this line
+  leaveType  String   // ← already added
   reason     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -103,20 +125,18 @@ model LeaveRequest {
   employee   Employee @relation(fields: [employeeId], references: [id])
 }
 
-
 model Recruitment {
   id          Int      @id @default(autoincrement())
   type        String
   employeeId  Int
   date        DateTime
-  status     String 
+  status      String 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
 }
-
 
 model Reporting {
   id            String   @id
@@ -127,17 +147,12 @@ model Reporting {
   size          String
   downloads     Int
   generatedDate DateTime
-
   content       Json
-
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   adminId       Int
   admin         Admin    @relation(fields: [adminId], references: [id])
 }
-
-
-
 
 model Salary {
   id            Int      @id @default(autoincrement())
@@ -167,4 +182,10 @@ model PerformanceReview {
   employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
+}
+
+enum Role {
+  ADMIN
+  TEAM_LEAD
+  EMPLOYEE
 }
