@@ -1,3 +1,4 @@
+
 import express from 'express';
 import {
   getEmployeeGoals,
@@ -6,22 +7,26 @@ import {
   deleteGoal,
   bulkAction
 } from '../controllers/goalController.js';
+import { requireAuth, allowRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/employee-goals
-router.get('/', getEmployeeGoals);
+// All employee goals endpoints require login
+router.use(requireAuth);
 
-// POST /api/employee-goals
-router.post('/', createGoal);
+// VIEW: admin, teamlead, employee (all can view goals)
+router.get('/', allowRoles('ADMIN', 'TEAM_LEAD', 'EMPLOYEE'), getEmployeeGoals);
 
-// PUT /api/employee-goals/bulk
-router.put('/bulk', bulkAction);
+// CREATE/UPDATE/DELETE/BULK: admin and teamlead only
+router.post('/', allowRoles('ADMIN', 'TEAM_LEAD'), createGoal);
+
+// PUT /api/employee-goals/bulk - IMPORTANT: This must come before /:id route
+router.put('/bulk', allowRoles('ADMIN', 'TEAM_LEAD'), bulkAction);
 
 // PUT /api/employee-goals/:id
-router.put('/:id', updateGoal);
+router.put('/:id', allowRoles('ADMIN', 'TEAM_LEAD'), updateGoal);
 
 // DELETE /api/employee-goals/:id
-router.delete('/:id', deleteGoal);
+router.delete('/:id', allowRoles('ADMIN', 'TEAM_LEAD'), deleteGoal);
 
 export default router;
