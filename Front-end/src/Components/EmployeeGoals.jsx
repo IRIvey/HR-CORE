@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './EmployeeGoals.css';
 
 const EmployeeGoals = () => {
@@ -10,6 +10,11 @@ const EmployeeGoals = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedGoals, setSelectedGoals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Role-based state
+  const [role, setRole] = useState(null);     // 'ADMIN' | 'TEAM_LEAD' | 'EMPLOYEE' | null
+  const [authChecked, setAuthChecked] = useState(false);
+  
   const [filters, setFilters] = useState({
     department: '',
     status: '',
@@ -31,49 +36,71 @@ const EmployeeGoals = () => {
     priority: 'Medium'
   });
 
-  useEffect(() => {
-    fetchGoals();
-    fetchEmployees();
-  }, []);
+  const navigate = useNavigate();
 
-  // Build/refresh departments after employees load (and also try API endpoint first)
+  // Auth check effect (first priority)
   useEffect(() => {
-    fetchDepartments();
+    (async () => {
+      try {
+        const r = await fetch('http://localhost:5000/auth/status', { credentials: 'include' });
+        const j = await r.json();
+
+        if (!j.loggedIn) {
+          navigate('/login');
+          return;
+        }
+        setRole(j.user?.role || null);
+        setAuthChecked(true);
+      } catch {
+        navigate('/login');
+      }
+    })();
+  }, [navigate]);
+
+  // Fetch data only after auth is checked
+  useEffect(() => {
+    if (authChecked) {
+      fetchGoals();
+      fetchEmployees();
+    }
+  }, [authChecked]);
+
+  // Build/refresh departments after employees load
+  useEffect(() => {
+    if (authChecked) {
+      fetchDepartments();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employees]);
+  }, [employees, authChecked]);
 
   useEffect(() => {
     applyFiltersAndSearch();
   }, [goals, searchTerm, filters, sortConfig]);
 
   const fetchGoals = () => {
-    fetch('/api/employee-goals')
-      .then(res => res.json())
+    fetch('/api/employee-goals', { credentials: 'include' })
+      .then(res => {
+        if (res.status === 401) return navigate('/login');
+        if (res.status === 403) return alert('Forbidden');
+        return res.json();
+      })
       .then(data => setGoals(Array.isArray(data) ? data : []))
       .catch(() => setGoals([]));
   };
 
   const fetchEmployees = () => {
-    fetch('/api/employees')
-      .then(res => res.json())
+    fetch('/api/employees', { credentials: 'include' })
+      .then(res => {
+        if (res.status === 401) return navigate('/login');
+        if (res.status === 403) return alert('Forbidden');
+        return res.json();
+      })
       .then(data => setEmployees(Array.isArray(data) ? data : []))
       .catch(() => setEmployees([]));
   };
 
-  // Try server route first; if missing, derive from employees
+  // Since you don't have a departments API, derive from employees
   const fetchDepartments = async () => {
-    try {
-      const res = await fetch('/api/departments');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length) {
-          setDepartments(data);
-          return;
-        }
-      }
-    } catch (_) {
-      // ignore and fall back
-    }
     // Fallback: derive unique department names from employees
     const unique = Array.from(
       new Set(employees.map(e => e?.department?.name).filter(Boolean))
@@ -86,14 +113,14 @@ const EmployeeGoals = () => {
 
     // Search filter
     if (searchTerm) {
-  const q = searchTerm.toLowerCase();
-  filtered = filtered.filter(goal =>
-    String(goal.id).toLowerCase().includes(q) ||                  // ✅ search by ID
-    (goal.employee?.name || '').toLowerCase().includes(q) ||
-    (goal.employee?.department?.name || '').toLowerCase().includes(q) ||
-    (goal.goalTitle || '').toLowerCase().includes(q)
-  );
-}
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(goal =>
+        String(goal.id).toLowerCase().includes(q) ||                  // ✅ search by ID
+        (goal.employee?.name || '').toLowerCase().includes(q) ||
+        (goal.employee?.department?.name || '').toLowerCase().includes(q) ||
+        (goal.goalTitle || '').toLowerCase().includes(q)
+      );
+    }
 
     // Department filter
     if (filters.department) {
@@ -166,8 +193,13 @@ const EmployeeGoals = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
-        .then(res => res.json())
+        .then(res => {
+          if (res.status === 401) return navigate('/login');
+          if (res.status === 403) return alert('Forbidden');
+          return res.json();
+        })
         .then(() => {
           fetchGoals();
           setNewGoal({
@@ -179,6 +211,10 @@ const EmployeeGoals = () => {
             priority: 'Medium'
           });
           setShowAddForm(false);
+        })
+        .catch(err => {
+          console.error('Failed to add goal:', err);
+          alert('Failed to add goal');
         });
     }
   };
@@ -190,11 +226,20 @@ const EmployeeGoals = () => {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ goalIds: selectedGoals, action }),
+      credentials: 'include'
     })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) return navigate('/login');
+        if (res.status === 403) return alert('Forbidden');
+        return res.json();
+      })
       .then(() => {
         fetchGoals();
         setSelectedGoals([]);
+      })
+      .catch(err => {
+        console.error('Bulk action failed:', err);
+        alert('Bulk action failed');
       });
   };
 
@@ -266,6 +311,15 @@ const EmployeeGoals = () => {
     );
   };
 
+  // Guard while we check auth state
+  if (!authChecked) return null;
+
+  // Role-based permissions
+  const isAdmin = role === 'ADMIN';
+  const isTeamLead = role === 'TEAM_LEAD';
+  const canManageGoals = isAdmin || isTeamLead; // ADMIN and TEAM_LEAD can manage
+  // EMPLOYEE can only view and search (no add, no bulk actions)
+
   return (
     <div className="goals-container">
       <h2 className="goals-title">Employee Goals</h2>
@@ -317,11 +371,15 @@ const EmployeeGoals = () => {
         </div>
 
         <div className="action-buttons">
-          <button onClick={() => setShowAddForm(true)} className="add-goal-btn">
-            Add Goal
-          </button>
+          {/* Only ADMIN and TEAM_LEAD can add goals */}
+          {canManageGoals && (
+            <button onClick={() => setShowAddForm(true)} className="add-goal-btn">
+              Add Goal
+            </button>
+          )}
 
-          {selectedGoals.length > 0 && (
+          {/* Only ADMIN and TEAM_LEAD can perform bulk actions */}
+          {canManageGoals && selectedGoals.length > 0 && (
             <div className="bulk-actions">
               <button
                 onClick={() => handleBulkAction('complete')}
@@ -340,7 +398,8 @@ const EmployeeGoals = () => {
         </div>
       </div>
 
-      {showAddForm && (
+      {/* Only show add form for ADMIN and TEAM_LEAD */}
+      {canManageGoals && showAddForm && (
         <div className="add-goal-form">
           <select
             value={newGoal.employeeId}
@@ -405,13 +464,16 @@ const EmployeeGoals = () => {
         <table>
           <thead>
             <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll}
-                  checked={selectedGoals.length === filteredGoals.length && filteredGoals.length > 0}
-                />
-              </th>
+              {/* Only show checkbox column for ADMIN and TEAM_LEAD */}
+              {canManageGoals && (
+                <th>
+                  <input
+                    type="checkbox"
+                    onChange={handleSelectAll}
+                    checked={selectedGoals.length === filteredGoals.length && filteredGoals.length > 0}
+                  />
+                </th>
+              )}
               <th onClick={() => handleSort('employee')} className="sortable">
                 Employee Name {sortConfig.key === 'employee' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
@@ -435,20 +497,23 @@ const EmployeeGoals = () => {
           <tbody>
             {filteredGoals.length === 0 ? (
               <tr>
-                <td colSpan="9" style={{ textAlign: 'center' }}>
+                <td colSpan={canManageGoals ? "9" : "8"} style={{ textAlign: 'center' }}>
                   No goals available.
                 </td>
               </tr>
             ) : (
               filteredGoals.map((goal, index) => (
                 <tr key={goal.id || index}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedGoals.includes(goal.id)}
-                      onChange={() => handleSelectGoal(goal.id)}
-                    />
-                  </td>
+                  {/* Only show checkbox for ADMIN and TEAM_LEAD */}
+                  {canManageGoals && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedGoals.includes(goal.id)}
+                        onChange={() => handleSelectGoal(goal.id)}
+                      />
+                    </td>
+                  )}
                   <td>{goal.employee?.name || '—'}</td>
                   <td>{goal.employee?.department?.name || '—'}</td>
                   <td>{goal.goalTitle}</td>
