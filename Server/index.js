@@ -22,6 +22,7 @@ app.use(session({
   secret: 'yourSuperSecretKey',
   resave: false,
   saveUninitialized: false,
+  
   cookie: {
     secure: false,
     maxAge: 7 * 24 * 60 * 60 * 1000
@@ -712,10 +713,177 @@ async function seedReports(adminId) {
   }
   console.log('Reports seeded successfully!');
 }
+// async function main() {
+//   const plainAdminPassword = 'securepassword123';
+//   const hashedAdminPassword = await bcrypt.hash(plainAdminPassword, 10);
 
+//   const designDept = await prisma.department.upsert({
+//     where: { name: 'Design' },
+//     update: {},
+//     create: { name: 'Design' }
+//   });
+
+//   const engineeringDept = await prisma.department.upsert({
+//     where: { name: 'Engineering' },
+//     update: {},
+//     create: { name: 'Engineering' }
+//   });
+
+//   // Admin (with ADMIN role if Admins are also employees)
+//   const admin = await prisma.admin.upsert({
+//     where: { email: 'admin@hrcore.com' },
+//     update: { password: hashedAdminPassword },
+//     create: {
+//       name: 'HR Admin',
+//       email: 'admin@hrcore.com',
+//       password: hashedAdminPassword,
+//     }
+//   });
+
+//   const existingEmployees = await prisma.employee.findMany();
+//   const employeeRecords = [];
+
+//   if (existingEmployees.length === 0) {
+//     const employeesData = [
+//       { name: 'Sanjana Afreen', position: 'UI UX Designer', role: 'TEAM_LEAD', gender: 'Female', departmentId: designDept.id },
+//       { name: 'Israt Risha Ivey', position: 'Backend Engineer', role: 'EMPLOYEE', gender: 'Female', departmentId: engineeringDept.id },
+//       { name: 'Zannatul Adon', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+//       { name: 'Nishat Tasnim', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+//       { name: 'Ayesha Binte Anis', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+//       { name: 'Adrita Ahsan', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+//       { name: 'Labiba Karim', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id }
+//     ];
+
+//     for (let i = 0; i < employeesData.length; i++) {
+//       const e = employeesData[i];
+//       const employee = await prisma.employee.create({
+//         data: {
+//           name: e.name,
+//           email: `${e.name.toLowerCase().replace(/ /g, '.')}@hrcore.com`,
+//           role: e.role,  // ✅ assign role
+//           salary: 50000 + i * 2000,
+//           departmentId: e.departmentId,
+//           position: e.position,
+//           status: 'Active',
+//           joinDate: new Date('2022-04-28'),
+//           age: 25 + i,
+//           experience: 2 + i,
+//         }
+//       });
+//       employeeRecords.push(employee);
+//     }
+//   } else {
+//     employeeRecords.push(...existingEmployees);
+//   }
+
+
+//   for (const emp of employeeRecords) {
+//     const empId = emp.id;
+
+//     if (!await prisma.goal.findFirst({ where: { employeeId: empId } })) {
+//       await prisma.goal.create({
+//         data: {
+//           employeeId: empId,
+//           name: emp.name,
+//           goalTitle: `Improve ${emp.position}`,
+//           description: `Achieve performance excellence in ${emp.position}`,
+//           deadline: new Date('2025-12-31'),
+//           progress: Math.floor(Math.random() * 80) + 10, // Random progress between 10-90%
+//           status: ['In Progress', 'Completed', 'Pending'][Math.floor(Math.random() * 3)],
+//         }
+//       });
+//     }
+
+//     if (!await prisma.attendance.findFirst({ where: { employeeId: empId, checkInTime: new Date('2025-06-26T09:00:00') } })) {
+//       await prisma.attendance.create({
+//         data: {
+//           employeeId: empId,
+//           checkInTime: new Date('2025-06-26T09:00:00'),
+//           checkOutTime: new Date('2025-06-26T17:00:00'),
+//         }
+//       });
+//     }
+
+//     if (!await prisma.leaveRequest.findFirst({ where: { employeeId: empId, startDate: new Date('2025-07-01') } })) {
+//       await prisma.leaveRequest.create({
+//         data: {
+//           employeeId: empId,
+//           startDate: new Date('2025-07-01'),
+//           endDate: new Date('2025-07-05'),
+//           status: ['Pending', 'Approved', 'Rejected'][Math.floor(Math.random() * 3)],
+//           leaveType: ['Annual', 'Sick', 'Personal'][Math.floor(Math.random() * 3)],
+//           reason: 'Personal time off request'
+//         }
+//       });
+//     }
+
+//     if (!await prisma.recruitment.findFirst({ where: { employeeId: empId, date: new Date('2025-05-01') } })) {
+//       await prisma.recruitment.create({
+//         data: {
+//           employeeId: empId,
+//           type: 'Internal',
+//           date: new Date('2025-05-01'),
+//           status: 'Completed'
+//         }
+//       });
+//     }
+
+//     if (!await prisma.salary.findFirst({ where: { employeeId: empId, payDate: new Date('2025-06-25') } })) {
+//       await prisma.salary.create({
+//         data: {
+//           employeeId: empId,
+//           baseSalary: emp.salary,
+//           allowances: 3000,
+//           deductions: Math.floor(emp.salary * 0.2), // 20% deductions
+//           payDate: new Date('2025-06-25'),
+//           overtimeHours: Math.floor(Math.random() * 20) + 5 // Random overtime 5-25 hours
+//         }
+//       });
+//     }
+
+//     if (!await prisma.performanceReview.findFirst({ where: { employeeId: empId, reviewDate: new Date('2025-06-20') } })) {
+//       await prisma.performanceReview.create({
+//         data: {
+//           employeeId: empId,
+//           rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Rating between 3.0-5.0
+//           feedback: `Performance review for ${emp.name}. Shows consistent improvement and dedication to work.`,
+//           reviewDate: new Date('2025-06-20'),
+//           reviewPeriod: 'Q2 2025',
+//           goals: `Continue professional development in ${emp.position}`
+//         }
+//       });
+//     }
+//   }
+
+//   // Seed comprehensive reports
+//   await seedReports(admin.id);
+  
+//   // Create HR System record if it doesn't exist
+//   if (!await prisma.hRSystem.findFirst()) {
+//     await prisma.hRSystem.create({
+//       data: { 
+//         status: 'Active',
+//         lastUpdated: new Date(),
+//         version: '2.0.0'
+//       }
+//     });
+//   }
+
+//   console.log('✅ All models seeded conditionally with comprehensive data!');
+//   console.log(`📊 Seeded ${(await prisma.reporting.count())} reports`);
+//   console.log(`👥 Seeded ${(await prisma.employee.count())} employees`);
+//   console.log(`🎯 Seeded ${(await prisma.goal.count())} goals`);
+//   console.log(`💰 Seeded ${(await prisma.salary.count())} salary records`);
+//   console.log(`⭐ Seeded ${(await prisma.performanceReview.count())} performance reviews`);
+// }
+// Replace your existing main() function with this updated version:
 async function main() {
   const plainAdminPassword = 'securepassword123';
   const hashedAdminPassword = await bcrypt.hash(plainAdminPassword, 10);
+
+  // Hash passwords for team lead and employee
+  const hashedTeamLeadPassword = await bcrypt.hash('team123', 10);
+  const hashedEmployeePassword = await bcrypt.hash('employee123', 10);
 
   const designDept = await prisma.department.upsert({
     where: { name: 'Design' },
@@ -729,6 +897,7 @@ async function main() {
     create: { name: 'Engineering' }
   });
 
+  // Admin (with ADMIN role)
   const admin = await prisma.admin.upsert({
     where: { email: 'admin@hrcore.com' },
     update: { password: hashedAdminPassword },
@@ -739,26 +908,84 @@ async function main() {
     }
   });
 
+  // Create default Team Lead account
+  const teamLead = await prisma.employee.upsert({
+    where: { email: 'teamlead@hrcore.com' },
+    update: { password: hashedTeamLeadPassword },
+    create: {
+      name: 'Team Lead User',
+      email: 'teamlead@hrcore.com',
+      password: hashedTeamLeadPassword,
+      role: 'TEAM_LEAD',
+      salary: 70000,
+      departmentId: designDept.id,
+      position: 'Senior UI UX Designer',
+      status: 'Active',
+      joinDate: new Date('2021-01-15'),
+      age: 30,
+      experience: 5,
+    }
+  });
+
+  // Create default Employee account
+  const defaultEmployee = await prisma.employee.upsert({
+    where: { email: 'employee@hrcore.com' },
+    update: { password: hashedEmployeePassword },
+    create: {
+      name: 'Employee User',
+      email: 'employee@hrcore.com',
+      password: hashedEmployeePassword,
+      role: 'EMPLOYEE',
+      salary: 45000,
+      departmentId: designDept.id,
+      position: 'Junior UI UX Designer',
+      status: 'Active',
+      joinDate: new Date('2023-06-01'),
+      age: 24,
+      experience: 1,
+    }
+  });
+
   const existingEmployees = await prisma.employee.findMany();
   const employeeRecords = [];
 
-  if (existingEmployees.length === 0) {
+  // Update existing employees without passwords
+  for (const emp of existingEmployees) {
+    if (!emp.password && emp.email !== 'teamlead@hrcore.com' && emp.email !== 'employee@hrcore.com') {
+      // Assign default password to existing employees
+      const defaultPassword = await bcrypt.hash('default123', 10);
+      await prisma.employee.update({
+        where: { id: emp.id },
+        data: { password: defaultPassword }
+      });
+    }
+  }
+
+  // Create additional employees if none exist (excluding the default accounts)
+  const regularEmployees = existingEmployees.filter(emp => 
+    emp.email !== 'teamlead@hrcore.com' && emp.email !== 'employee@hrcore.com'
+  );
+
+  if (regularEmployees.length === 0) {
     const employeesData = [
-      { name: 'Sanjana Afreen', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id },
-      { name: 'Israt Risha Ivey', position: 'Backend Engineer', gender: 'Female', departmentId: engineeringDept.id },
-      { name: 'Zannatul Adon', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id },
-      { name: 'Nishat Tasnim', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id },
-      { name: 'Ayesha Binte Anis', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id },
-      { name: 'Adrita Ahsan', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id },
-      { name: 'Labiba Karim', position: 'UI UX Designer', gender: 'Female', departmentId: designDept.id }
+      { name: 'Sanjana Afreen', position: 'UI UX Designer', role: 'TEAM_LEAD', gender: 'Female', departmentId: designDept.id },
+      { name: 'Israt Risha Ivey', position: 'Backend Engineer', role: 'EMPLOYEE', gender: 'Female', departmentId: engineeringDept.id },
+      { name: 'Zannatul Adon', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+      { name: 'Nishat Tasnim', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+      { name: 'Ayesha Binte Anis', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+      { name: 'Adrita Ahsan', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id },
+      { name: 'Labiba Karim', position: 'UI UX Designer', role: 'EMPLOYEE', gender: 'Female', departmentId: designDept.id }
     ];
 
     for (let i = 0; i < employeesData.length; i++) {
       const e = employeesData[i];
+      const defaultPassword = await bcrypt.hash('default123', 10);
       const employee = await prisma.employee.create({
         data: {
           name: e.name,
           email: `${e.name.toLowerCase().replace(/ /g, '.')}@hrcore.com`,
+          password: defaultPassword,
+          role: e.role,
           salary: 50000 + i * 2000,
           departmentId: e.departmentId,
           position: e.position,
@@ -771,9 +998,13 @@ async function main() {
       employeeRecords.push(employee);
     }
   } else {
-    employeeRecords.push(...existingEmployees);
+    employeeRecords.push(...regularEmployees);
   }
 
+  // Add the default accounts to employee records for goal/attendance seeding
+  employeeRecords.push(teamLead, defaultEmployee);
+
+  // Continue with your existing seeding logic for goals, attendance, etc.
   for (const emp of employeeRecords) {
     const empId = emp.id;
 
@@ -785,7 +1016,7 @@ async function main() {
           goalTitle: `Improve ${emp.position}`,
           description: `Achieve performance excellence in ${emp.position}`,
           deadline: new Date('2025-12-31'),
-          progress: Math.floor(Math.random() * 80) + 10, // Random progress between 10-90%
+          progress: Math.floor(Math.random() * 80) + 10,
           status: ['In Progress', 'Completed', 'Pending'][Math.floor(Math.random() * 3)],
         }
       });
@@ -831,9 +1062,9 @@ async function main() {
           employeeId: empId,
           baseSalary: emp.salary,
           allowances: 3000,
-          deductions: Math.floor(emp.salary * 0.2), // 20% deductions
+          deductions: Math.floor(emp.salary * 0.2),
           payDate: new Date('2025-06-25'),
-          overtimeHours: Math.floor(Math.random() * 20) + 5 // Random overtime 5-25 hours
+          overtimeHours: Math.floor(Math.random() * 20) + 5
         }
       });
     }
@@ -842,7 +1073,7 @@ async function main() {
       await prisma.performanceReview.create({
         data: {
           employeeId: empId,
-          rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Rating between 3.0-5.0
+          rating: Math.round((Math.random() * 2 + 3) * 10) / 10,
           feedback: `Performance review for ${emp.name}. Shows consistent improvement and dedication to work.`,
           reviewDate: new Date('2025-06-20'),
           reviewPeriod: 'Q2 2025',
@@ -872,8 +1103,13 @@ async function main() {
   console.log(`🎯 Seeded ${(await prisma.goal.count())} goals`);
   console.log(`💰 Seeded ${(await prisma.salary.count())} salary records`);
   console.log(`⭐ Seeded ${(await prisma.performanceReview.count())} performance reviews`);
+  console.log('');
+  console.log('🔐 Default Login Credentials:');
+  console.log('Admin: admin@hrcore.com / securepassword123');
+  console.log('Team Lead: teamlead@hrcore.com / team123');
+  console.log('Employee: employee@hrcore.com / employee123');
+  console.log('Other Employees: [name]@hrcore.com / default123');
 }
-
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
