@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { notificationAPI, apiCall } from '../Utils/api'; // Import the API utilities
 import './EmployeeGoals.css';
 
 const EmployeeGoals = () => {
@@ -11,9 +13,24 @@ const EmployeeGoals = () => {
   const [selectedGoals, setSelectedGoals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Notification System State
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Status/Progress Update Form State
+  const [showStatusForm, setShowStatusForm] = useState(false);
+  const [selectedGoalForUpdate, setSelectedGoalForUpdate] = useState(null);
+  const [statusUpdate, setStatusUpdate] = useState({
+    status: '',
+    progress: 0,
+    notes: ''
+  });
+  
   // Role-based state
-  const [role, setRole] = useState(null);     // 'ADMIN' | 'TEAM_LEAD' | 'EMPLOYEE' | null
+  const [role, setRole] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   
   const [filters, setFilters] = useState({
     department: '',
@@ -26,35 +43,35 @@ const EmployeeGoals = () => {
     direction: 'asc'
   });
 
-  // NOTE: renamed targetDate -> deadline
   const [newGoal, setNewGoal] = useState({
     employeeId: '',
     goalTitle: '',
-    deadline: '',
-    status: 'Not Started',
-    progress: 0,
-    priority: 'Medium'
+    deadline: ''
   });
 
   const navigate = useNavigate();
 
   // Auth check effect (first priority)
   useEffect(() => {
-    (async () => {
+    const checkAuth = async () => {
       try {
-        const r = await fetch('http://localhost:5000/auth/status', { credentials: 'include' });
-        const j = await r.json();
+        const response = await apiCall('/auth/status');
+        const data = await response.json();
 
-        if (!j.loggedIn) {
+        if (!data.loggedIn) {
           navigate('/login');
           return;
         }
-        setRole(j.user?.role || null);
+        setRole(data.user?.role || null);
+        setCurrentUserId(data.user?.id || null);
         setAuthChecked(true);
-      } catch {
+      } catch (error) {
+        console.error('Auth check failed:', error);
         navigate('/login');
       }
-    })();
+    };
+
+    checkAuth();
   }, [navigate]);
 
   // Fetch data only after auth is checked
@@ -62,6 +79,7 @@ const EmployeeGoals = () => {
     if (authChecked) {
       fetchGoals();
       fetchEmployees();
+      fetchNotifications();
     }
   }, [authChecked]);
 
@@ -70,33 +88,80 @@ const EmployeeGoals = () => {
     if (authChecked) {
       fetchDepartments();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, authChecked]);
 
   useEffect(() => {
     applyFiltersAndSearch();
   }, [goals, searchTerm, filters, sortConfig]);
 
-  const fetchGoals = () => {
-    fetch('/api/employee-goals', { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) return navigate('/login');
-        if (res.status === 403) return alert('Forbidden');
-        return res.json();
-      })
-      .then(data => setGoals(Array.isArray(data) ? data : []))
-      .catch(() => setGoals([]));
+  // Auto-refresh notifications every 30 seconds
+  useEffect(() => {
+    if (authChecked) {
+      const interval = setInterval(() => {
+        fetchNotifications();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [authChecked]);
+
+  const fetchGoals = async () => {
+    try {
+      const response = await apiCall('/api/employee-goals');
+      const data = await response.json();
+      setGoals(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch goals:', error);
+      setGoals([]);
+    }
   };
 
-  const fetchEmployees = () => {
-    fetch('/api/employees', { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) return navigate('/login');
-        if (res.status === 403) return alert('Forbidden');
-        return res.json();
-      })
-      .then(data => setEmployees(Array.isArray(data) ? data : []))
-      .catch(() => setEmployees([]));
+  const fetchEmployees = async () => {
+    try {
+      const response = await apiCall('/api/employees');
+      const data = await response.json();
+      setEmployees(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+      setEmployees([]);
+    }
+  };
+
+  // FIXED: Use the notification API utility
+  const fetchNotifications = async () => {
+    try {
+      const notifications = await notificationAPI.getAll();
+      setNotifications(notifications);
+      setUnreadCount(notifications.filter(n => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  };
+
+  // FIXED: Use the notification API utility
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await notificationAPI.markAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  // FIXED: Use the notification API utility
+  const markAllAsRead = async () => {
+    try {
+      await notificationAPI.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   };
 
   // Since you don't have a departments API, derive from employees
@@ -115,7 +180,7 @@ const EmployeeGoals = () => {
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       filtered = filtered.filter(goal =>
-        String(goal.id).toLowerCase().includes(q) ||                  // ✅ search by ID
+        String(goal.id).toLowerCase().includes(q) ||
         (goal.employee?.name || '').toLowerCase().includes(q) ||
         (goal.employee?.department?.name || '').toLowerCase().includes(q) ||
         (goal.goalTitle || '').toLowerCase().includes(q)
@@ -179,68 +244,91 @@ const EmployeeGoals = () => {
     setSortConfig({ key, direction });
   };
 
-  const handleAddGoal = () => {
-    // Validate required fields (note: using deadline now)
+  const handleAddGoal = async () => {
+    // Validate required fields
     if (newGoal.employeeId && newGoal.goalTitle && newGoal.deadline) {
-      // Cast types for API / DB
-      const payload = {
-        ...newGoal,
-        employeeId: Number(newGoal.employeeId),
-        progress: Number(newGoal.progress)
-      };
+      try {
+        const payload = {
+          employeeId: Number(newGoal.employeeId),
+          goalTitle: newGoal.goalTitle,
+          deadline: newGoal.deadline
+        };
 
-      fetch('/api/employee-goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include'
-      })
-        .then(res => {
-          if (res.status === 401) return navigate('/login');
-          if (res.status === 403) return alert('Forbidden');
-          return res.json();
-        })
-        .then(() => {
-          fetchGoals();
-          setNewGoal({
-            employeeId: '',
-            goalTitle: '',
-            deadline: '',
-            status: 'Not Started',
-            progress: 0,
-            priority: 'Medium'
-          });
-          setShowAddForm(false);
-        })
-        .catch(err => {
-          console.error('Failed to add goal:', err);
-          alert('Failed to add goal');
+        await apiCall('/api/employee-goals', {
+          method: 'POST',
+          body: JSON.stringify(payload)
         });
+
+        fetchGoals();
+        fetchNotifications(); // Refresh notifications after adding goal
+        setNewGoal({
+          employeeId: '',
+          goalTitle: '',
+          deadline: ''
+        });
+        setShowAddForm(false);
+      } catch (error) {
+        console.error('Failed to add goal:', error);
+        alert('Failed to add goal');
+      }
     }
   };
 
-  const handleBulkAction = (action) => {
+  // Handle status and progress updates (for employees)
+  const handleStatusUpdate = async () => {
+    if (!selectedGoalForUpdate) return;
+
+    try {
+      const payload = {
+        status: statusUpdate.status,
+        progress: Number(statusUpdate.progress),
+        notes: statusUpdate.notes
+      };
+
+      await apiCall(`/api/employee-goals/${selectedGoalForUpdate.id}/update-status`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+
+      fetchGoals();
+      fetchNotifications(); // Refresh notifications after status update
+      setShowStatusForm(false);
+      setSelectedGoalForUpdate(null);
+      setStatusUpdate({ status: '', progress: 0, notes: '' });
+      alert('Status updated successfully');
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  // Open status update form
+  const openStatusForm = (goal) => {
+    setSelectedGoalForUpdate(goal);
+    setStatusUpdate({
+      status: goal.status,
+      progress: goal.progress || 0,
+      notes: ''
+    });
+    setShowStatusForm(true);
+  };
+
+  const handleBulkAction = async (action) => {
     if (selectedGoals.length === 0) return;
 
-    fetch('/api/employee-goals/bulk', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goalIds: selectedGoals, action }),
-      credentials: 'include'
-    })
-      .then(res => {
-        if (res.status === 401) return navigate('/login');
-        if (res.status === 403) return alert('Forbidden');
-        return res.json();
-      })
-      .then(() => {
-        fetchGoals();
-        setSelectedGoals([]);
-      })
-      .catch(err => {
-        console.error('Bulk action failed:', err);
-        alert('Bulk action failed');
+    try {
+      await apiCall('/api/employee-goals/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ goalIds: selectedGoals, action })
       });
+
+      fetchGoals();
+      fetchNotifications(); // Refresh notifications after bulk action
+      setSelectedGoals([]);
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+      alert('Bulk action failed');
+    }
   };
 
   const handleSelectAll = (e) => {
@@ -260,7 +348,6 @@ const EmployeeGoals = () => {
   };
 
   const getStatusBadge = (status) => {
-    // Added 'Pending' to match backend seeding; kept 'Overdue' only for styling if you ever set it
     const statusClasses = {
       'Not Started': 'status-not-started',
       'In Progress': 'status-in-progress',
@@ -311,19 +398,100 @@ const EmployeeGoals = () => {
     );
   };
 
+  // Check if user can update a specific goal
+  const canUpdateGoal = (goal) => {
+    if (isAdmin || isTeamLead) return true;
+    return goal.employee?.id === currentUserId;
+  };
+
+  // Format notification time
+  const formatNotificationTime = (timestamp) => {
+    const now = new Date();
+    const notifTime = new Date(timestamp);
+    const diffMs = now - notifTime;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return notifTime.toLocaleDateString();
+  };
+
   // Guard while we check auth state
   if (!authChecked) return null;
 
   // Role-based permissions
   const isAdmin = role === 'ADMIN';
   const isTeamLead = role === 'TEAM_LEAD';
-  const canManageGoals = isAdmin || isTeamLead; // ADMIN and TEAM_LEAD can manage
-  // EMPLOYEE can only view and search (no add, no bulk actions)
+  const isEmployee = role === 'EMPLOYEE';
+  const canManageGoals = isAdmin || isTeamLead;
 
   return (
     <div className="goals-container">
-      <h2 className="goals-title">Employee Goals</h2>
+      <div className="goals-header">
+        <h2 className="goals-title">Employee Goals</h2>
+        
+        {/* Notification Bell Icon - Show for Admin only */}
+        {isAdmin && (
+          <div className="notification-container">
+            <button 
+              className="notification-bell" 
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              🔔
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount}</span>
+              )}
+            </button>
 
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <h3>Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="mark-all-read">
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                
+                <div className="notification-list">
+                  {notifications.length === 0 ? (
+                    <div className="no-notifications">No notifications</div>
+                  ) : (
+                    notifications.map(notification => (
+                      <div 
+                        key={notification.id} 
+                        className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markNotificationAsRead(notification.id);
+                          }
+                        }}
+                      >
+                        <div className="notification-content">
+                          <div className="notification-title">{notification.title}</div>
+                          <div className="notification-message">{notification.message}</div>
+                          <div className="notification-time">
+                            {formatNotificationTime(notification.createdAt)}
+                          </div>
+                        </div>
+                        {!notification.isRead && <div className="unread-indicator"></div>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Rest of your component remains the same... */}
       {/* Search and Filter Section */}
       <div className="controls-section">
         <div className="search-filters">
@@ -371,14 +539,12 @@ const EmployeeGoals = () => {
         </div>
 
         <div className="action-buttons">
-          {/* Only ADMIN and TEAM_LEAD can add goals */}
           {canManageGoals && (
             <button onClick={() => setShowAddForm(true)} className="add-goal-btn">
               Add Goal
             </button>
           )}
 
-          {/* Only ADMIN and TEAM_LEAD can perform bulk actions */}
           {canManageGoals && selectedGoals.length > 0 && (
             <div className="bulk-actions">
               <button
@@ -398,65 +564,111 @@ const EmployeeGoals = () => {
         </div>
       </div>
 
-      {/* Only show add form for ADMIN and TEAM_LEAD */}
       {canManageGoals && showAddForm && (
         <div className="add-goal-form">
-          <select
-            value={newGoal.employeeId}
-            onChange={e => setNewGoal({ ...newGoal, employeeId: e.target.value })}
-          >
-            <option value="">Select Employee</option>
-            {employees.map(emp => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name}
-              </option>
-            ))}
-          </select>
+          <h3>Add New Goal</h3>
+          
+          <div className="form-group">
+            <label>Select Employee:</label>
+            <select
+              value={newGoal.employeeId}
+              onChange={e => setNewGoal({ ...newGoal, employeeId: e.target.value })}
+              required
+            >
+              <option value="">Select Employee</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <input
-            type="text"
-            placeholder="Goal Title"
-            value={newGoal.goalTitle}
-            onChange={e => setNewGoal({ ...newGoal, goalTitle: e.target.value })}
-          />
+          <div className="form-group">
+            <label>Goal Title:</label>
+            <input
+              type="text"
+              placeholder="Enter goal title"
+              value={newGoal.goalTitle}
+              onChange={e => setNewGoal({ ...newGoal, goalTitle: e.target.value })}
+              required
+            />
+          </div>
 
-          {/* NOTE: deadline field */}
-          <input
-            type="date"
-            value={newGoal.deadline}
-            onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })}
-          />
+          <div className="form-group">
+            <label>Target Date:</label>
+            <input
+              type="date"
+              value={newGoal.deadline}
+              onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })}
+              required
+            />
+          </div>
 
-          <select
-            value={newGoal.status}
-            onChange={e => setNewGoal({ ...newGoal, status: e.target.value })}
-          >
-            <option value="Not Started">Not Started</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="Pending">Pending</option>
-          </select>
+          <div className="form-actions">
+            <button onClick={handleAddGoal} className="submit-btn">Add Goal</button>
+            <button onClick={() => setShowAddForm(false)} className="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      )}
 
-          <select
-            value={newGoal.priority}
-            onChange={e => setNewGoal({ ...newGoal, priority: e.target.value })}
-          >
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
+      {/* Status Update Form */}
+      {showStatusForm && selectedGoalForUpdate && (
+        <div className="modal-overlay">
+          <div className="status-update-form">
+            <h3>Update Goal Status</h3>
+            <p><strong>Goal:</strong> {selectedGoalForUpdate.goalTitle}</p>
+            
+            <div className="form-group">
+              <label>Status:</label>
+              <select
+                value={statusUpdate.status}
+                onChange={e => setStatusUpdate({ ...statusUpdate, status: e.target.value })}
+              >
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
 
-          <input
-            type="number"
-            value={newGoal.progress}
-            onChange={e => setNewGoal({ ...newGoal, progress: e.target.value })}
-            placeholder="Progress %"
-            min="0"
-            max="100"
-          />
+            <div className="form-group">
+              <label>Progress (%):</label>
+              <input
+                type="number"
+                value={statusUpdate.progress}
+                onChange={e => setStatusUpdate({ ...statusUpdate, progress: e.target.value })}
+                min="0"
+                max="100"
+              />
+            </div>
 
-          <button onClick={handleAddGoal}>Submit</button>
-          <button onClick={() => setShowAddForm(false)}>Cancel</button>
+            <div className="form-group">
+              <label>Notes (optional):</label>
+              <textarea
+                value={statusUpdate.notes}
+                onChange={e => setStatusUpdate({ ...statusUpdate, notes: e.target.value })}
+                placeholder="Add any notes about your progress..."
+                rows="3"
+              />
+            </div>
+
+            <div className="form-actions">
+              <button onClick={handleStatusUpdate} className="submit-btn">
+                Update Status
+              </button>
+              <button 
+                onClick={() => {
+                  setShowStatusForm(false);
+                  setSelectedGoalForUpdate(null);
+                  setStatusUpdate({ status: '', progress: 0, notes: '' });
+                }} 
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -464,7 +676,6 @@ const EmployeeGoals = () => {
         <table>
           <thead>
             <tr>
-              {/* Only show checkbox column for ADMIN and TEAM_LEAD */}
               {canManageGoals && (
                 <th>
                   <input
@@ -492,19 +703,19 @@ const EmployeeGoals = () => {
                 Progress {sortConfig.key === 'progress' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
               <th>Alerts</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredGoals.length === 0 ? (
               <tr>
-                <td colSpan={canManageGoals ? "9" : "8"} style={{ textAlign: 'center' }}>
+                <td colSpan={canManageGoals ? "10" : "9"} style={{ textAlign: 'center' }}>
                   No goals available.
                 </td>
               </tr>
             ) : (
               filteredGoals.map((goal, index) => (
                 <tr key={goal.id || index}>
-                  {/* Only show checkbox for ADMIN and TEAM_LEAD */}
                   {canManageGoals && (
                     <td>
                       <input
@@ -522,6 +733,17 @@ const EmployeeGoals = () => {
                   <td>{getStatusBadge(goal.status)}</td>
                   <td>{getProgressBar(goal.progress)}</td>
                   <td>{getDueDateAlert(goal.deadline, goal.status)}</td>
+                  <td>
+                    {canUpdateGoal(goal) && (
+                      <button
+                        onClick={() => openStatusForm(goal)}
+                        className="update-status-btn"
+                        title="Update Status & Progress"
+                      >
+                        📝
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))
             )}
